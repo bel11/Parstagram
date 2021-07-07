@@ -23,6 +23,8 @@
         </activity>
         <activity android:name=".MainActivity">
         </activity>
+        <activity android:name=".LogOutActivity">
+        </activity>
     </application>
 
 </manifest>
