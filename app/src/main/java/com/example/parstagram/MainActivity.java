@@ -76,6 +76,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        btnHome.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goHomeActivity();
+            }
+        });
+
 //        queryPosts();
         btnSubmit.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -93,6 +100,12 @@ public class MainActivity extends AppCompatActivity {
                 savePost(description, currentUser, photoFile);
             }
         });
+    }
+
+    private void goHomeActivity() {
+        Log.d(TAG, "hello go home");
+        Intent i = new Intent(MainActivity.this, FeedActivity.class);
+        startActivity(i);
     }
 
     private void launchCamera() {
