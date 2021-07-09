@@ -1,12 +1,16 @@
 package com.example.parstagram;
 
 import android.content.Context;
+import android.content.Intent;
+import android.icu.text.SimpleDateFormat;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -17,6 +21,7 @@ import com.parse.ParseFile;
 import org.w3c.dom.Text;
 
 import java.util.List;
+import java.util.Locale;
 
 public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> {
     Context context;
@@ -42,7 +47,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
 
     @Override
     public int getItemCount() {
-        Log.d("hello", "posts: " + String.valueOf(posts.size()));
         return posts.size();
     }
 
@@ -50,17 +54,22 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         private TextView tvUsername;
         private TextView tvDescription;
         private ImageView ivImage;
+        private TextView tvRelativeTime;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvUsername = itemView.findViewById(R.id.tvUsername);
             tvDescription = itemView.findViewById(R.id.tvDescription);
             ivImage = itemView.findViewById(R.id.ivImage);
+            tvRelativeTime = itemView.findViewById(R.id.tvRelativeTime);
         }
 
         public void bind(Post post) {
             tvDescription.setText(post.getDescription());
             tvUsername.setText(post.getUser().getUsername());
+//            System.out.println(getRelativeTimeAgo(post.getCreatedAt().toString()));
+            tvRelativeTime.setText(getRelativeTimeAgo(post.getCreatedAt().toString()));
+            Log.i("postadaptertest", "relative time");
             ParseFile image = post.getImage();
             if (image != null) {
                 Glide.with(context)
@@ -68,6 +77,24 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                         .into(ivImage);
             }
         }
+    }
+
+    // from stackoverflow - changed postFormat string to match
+    public String getRelativeTimeAgo(String rawJsonDate) {
+        String postFormat = "EEE MMM dd HH:mm:ss zzz yyyy";
+        SimpleDateFormat sf = new SimpleDateFormat(postFormat, Locale.ENGLISH);
+        sf.setLenient(true);
+
+        String relativeDate = "";
+        try {
+            long dateMillis = sf.parse(rawJsonDate).getTime();
+            relativeDate = DateUtils.getRelativeTimeSpanString(dateMillis,
+                    System.currentTimeMillis(), DateUtils.SECOND_IN_MILLIS).toString();
+        } catch (java.text.ParseException e) {
+            e.printStackTrace();
+        }
+
+        return relativeDate;
     }
     // Clean all elements of the recycler
     public void clear() {
@@ -80,4 +107,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         posts.addAll(list);
         notifyDataSetChanged();
     }
+
+
 }
