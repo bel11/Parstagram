@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -21,11 +22,14 @@ import com.parse.ParseException;
 import com.parse.ParseQuery;
 
 import java.util.ArrayList;
+
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class FeedActivity extends AppCompatActivity {
     private RecyclerView rvPosts;
+    private EndlessRecyclerViewScrollListener endlessRecyclerViewScrollListener;
     protected List<Post> allPosts;
     protected PostsAdapter adapter;
     private SwipeRefreshLayout swipeContainer;
@@ -66,9 +70,49 @@ public class FeedActivity extends AppCompatActivity {
 
         // set adapter and layout manager for RV
         rvPosts.setAdapter(adapter);
-        rvPosts.setLayoutManager(new LinearLayoutManager(this));
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        rvPosts.setLayoutManager(linearLayoutManager);
+        endlessRecyclerViewScrollListener = new EndlessRecyclerViewScrollListener(linearLayoutManager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
+                Date createdAt = allPosts.get(allPosts.size()-1).getCreatedAt();
+                loadNextDataFromApi(createdAt);
+            }
+        };
+        rvPosts.addOnScrollListener(endlessRecyclerViewScrollListener);
         // query posts from Parstagram
-        queryPosts();
+        queryPosts(0);
+    }
+
+    private void loadNextDataFromApi(Date createdAt) {
+        ParseQuery<Post> query = ParseQuery.getQuery(Post.class);
+        // skips already loaded posts
+        query.include(Post.KEY_USER);
+
+        query.addDescendingOrder("createdAt");
+        query.setLimit(5);
+
+        query.whereLessThan("createdAt", createdAt);
+        query.findInBackground(new FindCallback<Post>() {
+            @Override
+            public void done(List<Post> posts, ParseException e) {
+                if (e != null) {
+                    Log.e(TAG, "issue with getting posts", e);
+                    return;
+                }
+
+                // to debug - print every post description
+                for (Post post : posts) {
+                    Log.i(TAG, "Posts: " + post.getDescription() + ", username " + post.getUser());
+                }
+
+                // save received posts to allPosts and notify adapter of new data
+                allPosts.addAll(posts);
+                adapter.notifyDataSetChanged();
+//                endlessRecyclerViewScrollListener.resetState();
+            }
+        });
+
     }
 
     private void fetchTimelineAsync(int page) {
@@ -77,19 +121,20 @@ public class FeedActivity extends AppCompatActivity {
         // getHomeTimeline is an example endpoint.
         // Remember to CLEAR OUT old items before appending in the new ones
         adapter.clear();
+//        adapter.addAll(allPosts);
         // ...the data has come back, add new items to your adapter...
-        queryPosts();
+        queryPosts(page);
         // Now we call setRefreshing(false) to signal refresh has finished
         swipeContainer.setRefreshing(false);
     }
 
-    private void queryPosts() {
+    private void queryPosts(int page) {
         // specify we want to query Post.class
         ParseQuery<Post> query = ParseQuery.getQuery(Post.class);
         // include data referred by userkey
         query.include(Post.KEY_USER);
         // limit num posts to latest 20
-        query.setLimit(20);
+        query.setLimit(5);
         // order by newest first
         query.addDescendingOrder("createdAt");
         // start async call for posts

@@ -13,11 +13,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.parse.ParseFile;
 
+import org.parceler.Parcels;
 import org.w3c.dom.Text;
 
 import java.util.List;
@@ -50,7 +55,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         return posts.size();
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         private TextView tvUsername;
         private TextView tvDescription;
         private ImageView ivImage;
@@ -62,12 +67,12 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             tvDescription = itemView.findViewById(R.id.tvDescription);
             ivImage = itemView.findViewById(R.id.ivImage);
             tvRelativeTime = itemView.findViewById(R.id.tvRelativeTime);
+            itemView.setOnClickListener(this);
         }
 
         public void bind(Post post) {
             tvDescription.setText(post.getDescription());
             tvUsername.setText(post.getUser().getUsername());
-//            System.out.println(getRelativeTimeAgo(post.getCreatedAt().toString()));
             tvRelativeTime.setText(getRelativeTimeAgo(post.getCreatedAt().toString()));
             Log.i("postadaptertest", "relative time");
             ParseFile image = post.getImage();
@@ -77,10 +82,40 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                         .into(ivImage);
             }
         }
+
+        @Override
+        public void onClick(View v) {
+            int position = getAdapterPosition();
+            if (position != RecyclerView.NO_POSITION) {
+                Post post = posts.get(position);
+                // open new fragment
+                Fragment fragment = new DetailsFragment(post.getUser().getUsername(),
+                        post.getDescription(),
+                        getRelativeTimeAgo(post.getCreatedAt().toString()),
+                        post.getImage().getUrl());
+
+                AppCompatActivity activity = (AppCompatActivity) context;
+                activity.getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragmentPosts, fragment).addToBackStack(null).commit();
+
+//                FragmentManager fm = getSupportFragmentManager();
+//                FragmentTransaction transaction = fm.beginTransaction();
+//                transaction.replace(R.id.fragmentPosts, fragment);
+//                transaction.commit();
+
+//                Intent i = new Intent(context, DetailsActivity.class);
+//                i.putExtra(Post.class.getSimpleName(), Parcels.wrap(post));
+//                context.startActivity(i);
+
+//                Intent intent = new Intent(context, MovieDetailsActivity.class);
+//                intent.putExtra(Movie.class.getSimpleName(), Parcels.wrap(movie));
+//                context.startActivity(intent);
+            }
+        }
     }
 
     // from stackoverflow - changed postFormat string to match
-    public String getRelativeTimeAgo(String rawJsonDate) {
+    public static String getRelativeTimeAgo(String rawJsonDate) {
         String postFormat = "EEE MMM dd HH:mm:ss zzz yyyy";
         SimpleDateFormat sf = new SimpleDateFormat(postFormat, Locale.ENGLISH);
         sf.setLenient(true);
@@ -107,6 +142,4 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         posts.addAll(list);
         notifyDataSetChanged();
     }
-
-
 }
